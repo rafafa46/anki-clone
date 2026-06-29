@@ -130,6 +130,20 @@
     padding:11px;border-radius:10px;border:1px solid var(--line2)}
   .linkbtn:hover{color:var(--ink);background:#00000008}
 
+  .repobox{font-family:var(--mono);font-size:12.5px;letter-spacing:.03em;color:var(--muted);
+    background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:18px}
+  .repobox b{color:var(--ink)}
+  .profiles{display:flex;flex-direction:column;gap:11px;margin:8px 0 4px}
+  .profbtn{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);
+    border-radius:var(--r);padding:16px 18px;transition:transform .04s ease,border-color .12s}
+  .profbtn:hover{border-color:var(--accent)} .profbtn:active{transform:translateY(1px)}
+  .profbtn .pn{font-family:var(--mono);font-size:13px;letter-spacing:.06em;color:var(--muted);
+    width:34px;height:34px;border-radius:9px;border:1px solid var(--line);display:grid;place-items:center;flex:0 0 auto}
+  .profbtn .pt{font-size:16px;font-weight:600}
+  .profbtn .pa{margin-left:auto;color:var(--muted);display:flex}
+  .profchip{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);
+    border:1px solid var(--line);border-radius:8px;padding:5px 10px;background:var(--card);display:flex;align-items:center;gap:6px}
+  .profchip:hover{border-color:var(--accent)} .profchip svg{opacity:.55}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--canvas);
     font-size:13px;padding:10px 16px;border-radius:10px;box-shadow:0 8px 24px -10px #00000060;opacity:0;pointer-events:none;transition:opacity .2s}
   .toast.show{opacity:1}
@@ -140,6 +154,7 @@
 <div class="app">
   <div class="topbar">
     <div class="brand"><b>Oxford&nbsp;5000</b> · fr→en</div>
+    <button class="profchip hidden" id="profChip" title="Changer de profil"><span id="profChipName">—</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
     <div class="top-spacer"></div>
     <div class="sync" id="sync"><span class="dot"></span><span id="syncTxt">—</span></div>
     <button class="icon-btn" id="btnSettings" title="Réglages" aria-label="Réglages">
@@ -148,28 +163,39 @@
   </div>
   <div class="progress" id="progressWrap" style="visibility:hidden"><i id="progressBar"></i></div>
 
+  <!-- PROFILES -->
+  <section class="screen center hidden" id="scProfiles">
+    <h1 class="title">Choisis un profil</h1>
+    <p class="sub">Chaque profil garde sa propre progression — flags et historique — dans son propre fichier du dépôt.</p>
+    <div class="profiles" id="profileList"></div>
+  </section>
+
   <!-- SETUP -->
   <section class="screen center" id="scSetup">
-    <h1 class="title">Connecter ton dépôt</h1>
-    <p class="sub">L'appli lit et écrit ton fichier <span class="mono">.csv</span> dans un dépôt GitHub privé. Le jeton reste dans ce navigateur — il n'est jamais envoyé ailleurs ni inscrit dans le code.</p>
-    <div class="field"><label>Propriétaire (ton pseudo GitHub)</label><input class="input" id="inOwner" placeholder="ex. marie-dupont" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
-    <div class="field"><label>Dépôt</label><input class="input" id="inRepo" placeholder="ex. oxford-deck" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
-    <div class="field"><label>Chemin du fichier</label><input class="input" id="inPath" value="oxford-deck.csv" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
-    <div class="field"><label>Jeton d'accès (fine-grained)</label><input class="input" id="inToken" type="password" placeholder="github_pat_…" autocapitalize="off" autocorrect="off" spellcheck="false">
-      <div class="hint">Permissions requises : <b>Contents</b> en lecture & écriture, sur ce seul dépôt.</div>
+    <h1 class="title">Activer la sauvegarde</h1>
+    <p class="sub">Une seule chose, une fois par appareil : autoriser l'appli à <b>enregistrer ta progression</b> dans ton dépôt. Cette autorisation est un « jeton » que tu colles ci-dessous. Il reste dans ce navigateur, jamais inscrit dans le code.</p>
+    <div class="repobox" id="detRepo">Dépôt : <b>—</b></div>
+    <div class="field"><label>Jeton d'accès GitHub</label><input class="input" id="inToken" type="password" placeholder="github_pat_…" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <div class="hint">Autorisation requise : <b>Contents</b> en lecture & écriture.</div>
     </div>
     <details class="help">
-      <summary>Comment créer le jeton (1 fois)</summary>
+      <summary>Créer le jeton (1 min, une seule fois)</summary>
       <ol>
-        <li>Crée un dépôt <b>privé</b> et dépose-y le fichier <code>oxford-deck.csv</code>.</li>
-        <li>GitHub → <b>Settings</b> → <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <code>Generate new token</code>.</li>
-        <li>Resource owner = toi · Repository access = <b>Only select repositories</b> → ton dépôt.</li>
-        <li>Permissions → Repository → <b>Contents</b> → <b>Read and write</b>.</li>
-        <li>Génère, copie le jeton, colle-le ci-dessus.</li>
+        <li>GitHub → ta photo de profil → <b>Settings</b>.</li>
+        <li>Tout en bas : <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <code>Generate new token</code>.</li>
+        <li><b>Repository access</b> → <b>Only select repositories</b> → choisis ton dépôt.</li>
+        <li><b>Permissions</b> → <b>Repository permissions</b> → <b>Contents</b> → <b>Read and write</b>.</li>
+        <li><code>Generate token</code>, copie-le, colle-le ci-dessus.</li>
       </ol>
     </details>
-    <button class="btn" id="btnConnect">Se connecter</button>
-    <div class="row-actions"><button class="btn ghost" id="btnLocal">Tester sans GitHub (fichier local)</button></div>
+    <details class="help" id="advBox">
+      <summary>Réglages avancés (normalement inutile)</summary>
+      <div class="field" style="margin-top:12px"><label>Propriétaire</label><input class="input" id="inOwner" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+      <div class="field"><label>Dépôt</label><input class="input" id="inRepo" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+      <div class="field"><label>Fichier modèle</label><input class="input" id="inTpl" value="oxford-deck.csv" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+    </details>
+    <button class="btn" id="btnConnect">Activer la sauvegarde</button>
+    <div class="row-actions"><button class="btn ghost" id="btnLocal">Essayer sans sauvegarde</button></div>
   </section>
 
   <!-- HOME -->
@@ -243,11 +269,13 @@
 "use strict";
 const HEADERS=["word","level","pos","word_fr","flag","last_seen_date"];
 const LEVELS=["a1","a2","b1","b2","c1"];
+const PROFILES=[1,2,3,4,5];
 const CFG_KEY="oxdeck_cfg_v1";
 const $=s=>document.querySelector(s);
 const el=id=>document.getElementById(id);
 
 let cfg=null, rows=[], sha=null, mode="github"; // or "local"
+let currentProfile=null;
 let dirty=false, saveTimer=null;
 const changeLog=new Map();           // key -> {flag,last_seen_date}
 const keyOf=r=>r.word+"\u0001"+r.pos;
@@ -288,20 +316,22 @@ function utf8ToB64(str){const b=new TextEncoder().encode(str);let s="";const C=0
 function b64ToUtf8(b64){b64=b64.replace(/\s/g,"");const bin=atob(b64);const b=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return new TextDecoder().decode(b);}
 
 /* ---------- GitHub ---------- */
-function apiURL(){return `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path.split("/").map(encodeURIComponent).join("/")}`;}
+function apiURLp(path){return `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${path.split("/").map(encodeURIComponent).join("/")}`;}
 function ghHeaders(){return {Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};}
-async function ghGet(){
-  const r=await fetch(apiURL()+"?ref=HEAD&t="+Date.now(),{headers:ghHeaders(),cache:"no-store"});
+async function ghGetPath(path){
+  const r=await fetch(apiURLp(path)+"?ref=HEAD&t="+Date.now(),{headers:ghHeaders(),cache:"no-store"});
   if(!r.ok){const e=new Error(await ghMsg(r));e.status=r.status;throw e;}
   const j=await r.json();
   return {text:b64ToUtf8(j.content),sha:j.sha};
 }
-async function ghPut(text,message,curSha){
-  const r=await fetch(apiURL(),{method:"PUT",headers:{...ghHeaders(),"Content-Type":"application/json"},
-    body:JSON.stringify({message,content:utf8ToB64(text),sha:curSha})});
+async function ghPutPath(path,text,message,curSha){
+  const body={message,content:utf8ToB64(text)};if(curSha)body.sha=curSha;
+  const r=await fetch(apiURLp(path),{method:"PUT",headers:{...ghHeaders(),"Content-Type":"application/json"},body:JSON.stringify(body)});
   if(!r.ok){const e=new Error(await ghMsg(r));e.status=r.status;throw e;}
   const j=await r.json();return j.content.sha;
 }
+function ghGet(){return ghGetPath(cfg.path);}
+function ghPut(text,message,curSha){return ghPutPath(cfg.path,text,message,curSha);}
 async function ghMsg(r){try{const j=await r.json();return j.message||r.statusText;}catch(_){return r.statusText;}}
 
 /* ---------- sync ---------- */
@@ -332,8 +362,9 @@ async function save(){
 }
 
 /* ---------- screens ---------- */
-function show(id){["scSetup","scHome","scStudy","scDone"].forEach(s=>el(s).classList.toggle("hidden",s!==id));
-  el("progressWrap").style.visibility = id==="scStudy" ? "visible":"hidden";}
+function show(id){["scProfiles","scSetup","scHome","scStudy","scDone"].forEach(s=>el(s).classList.toggle("hidden",s!==id));
+  el("progressWrap").style.visibility = id==="scStudy" ? "visible":"hidden";
+  el("profChip").classList.toggle("hidden", !(mode==="github" && currentProfile && ["scHome","scStudy","scDone"].includes(id)));}
 
 /* ---------- home ---------- */
 const homeFilters={levels:new Set(LEVELS),flag:"all",size:30};
@@ -444,18 +475,69 @@ document.addEventListener("keydown",e=>{
 document.addEventListener("visibilitychange",()=>{if(document.hidden)save().catch(()=>{});});
 window.addEventListener("beforeunload",e=>{if(dirty&&mode==="github"){e.preventDefault();e.returnValue="";}});
 
-/* ---------- setup / connect ---------- */
-function fillSetup(){if(cfg){el("inOwner").value=cfg.owner||"";el("inRepo").value=cfg.repo||"";el("inPath").value=cfg.path||"oxford-deck.csv";el("inToken").value=cfg.token||"";}}
-el("btnConnect").onclick=async()=>{
-  const owner=el("inOwner").value.trim(),repo=el("inRepo").value.trim(),path=el("inPath").value.trim(),token=el("inToken").value.trim();
-  if(!owner||!repo||!path||!token){toast("Remplis tous les champs.");return;}
-  cfg={owner,repo,path,token};mode="github";
-  setSync("busy","connexion…");
+/* ---------- profiles ---------- */
+function profilePath(n){return `profil${n}.csv`;}
+function showProfiles(){renderProfiles();show("scProfiles");}
+function renderProfiles(){
+  const c=el("profileList");c.innerHTML="";
+  PROFILES.forEach(n=>{
+    const b=document.createElement("button");b.className="profbtn";
+    b.innerHTML=`<span class="pn">${n}</span><span class="pt">profil${n}</span>`+
+      `<span class="pa"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 6l6 6-6 6"/></svg></span>`;
+    b.onclick=()=>selectProfile(n);
+    c.appendChild(b);
+  });
+}
+async function selectProfile(n){
+  currentProfile=n;cfg.path=profilePath(n);dirty=false;changeLog.clear();
+  setSync("busy","ouverture profil"+n+"…");
   try{
-    const g=await ghGet();rows=rowsFromCSV(g.text);sha=g.sha;
-    if(!rows.length)throw new Error("Fichier vide ou colonnes manquantes.");
-    localStorage.setItem(CFG_KEY,JSON.stringify(cfg));
+    let g;
+    try{ g=await ghGetPath(cfg.path); }
+    catch(e){ if(e.status===404){ g=await seedProfile(n); } else throw e; }
+    rows=rowsFromCSV(g.text);sha=g.sha;
+    if(!rows.length)throw new Error("Profil vide ou colonnes manquantes.");
+    localStorage.setItem(CFG_KEY,JSON.stringify({owner:cfg.owner,repo:cfg.repo,token:cfg.token,template:cfg.template,lastProfile:n}));
+    el("profChipName").textContent="profil"+n;el("homeTitle").textContent="profil"+n;
     setSync("ok","synchronisé");enterHome();
+  }catch(e){currentProfile=null;setSync("err","échec");toast("Profil indisponible : "+e.message);showProfiles();}
+}
+async function seedProfile(n){
+  setSync("busy","création profil"+n+"…");
+  const t=await ghGetPath(cfg.template);
+  const base=rowsFromCSV(t.text).map(r=>({...r,flag:"",last_seen_date:""}));
+  const text=toCSV(base);
+  const newSha=await ghPutPath(cfg.path,text,`Création profil${n}`,null);
+  return {text,sha:newSha};
+}
+el("profChip").onclick=async()=>{ if(mode!=="github")return; await save().catch(()=>{}); showProfiles(); };
+
+/* ---------- setup / connect ---------- */
+function detectRepo(){
+  const m=location.hostname.match(/^([^.]+)\.github\.io$/i);
+  if(!m)return null;
+  const seg=location.pathname.split("/").filter(Boolean);
+  return {owner:m[1], repo: seg.length?seg[0]:(m[1]+".github.io")};
+}
+function fillSetup(){
+  const det=detectRepo();
+  const owner=(cfg&&cfg.owner)||(det&&det.owner)||"";
+  const repo =(cfg&&cfg.repo) ||(det&&det.repo) ||"";
+  el("inOwner").value=owner; el("inRepo").value=repo;
+  el("inTpl").value=(cfg&&cfg.template)||"oxford-deck.csv";
+  el("inToken").value=(cfg&&cfg.token)||"";
+  el("detRepo").innerHTML = (owner&&repo) ? `Dépôt&nbsp;: <b>${owner}/${repo}</b>` : `Dépôt non détecté — renseigne-le dans « Réglages avancés ».`;
+  el("advBox").open = !(owner&&repo);
+}
+el("btnConnect").onclick=async()=>{
+  const owner=el("inOwner").value.trim(),repo=el("inRepo").value.trim(),template=el("inTpl").value.trim(),token=el("inToken").value.trim();
+  if(!owner||!repo||!template||!token){toast("Remplis tous les champs.");return;}
+  cfg={owner,repo,token,template};mode="github";
+  setSync("busy","vérification…");
+  try{
+    await ghGetPath(template);                 // verify repo + token + template exist
+    localStorage.setItem(CFG_KEY,JSON.stringify({owner,repo,token,template}));
+    setSync("ok","connecté");showProfiles();
   }catch(e){setSync("err","échec");toast("Connexion impossible : "+e.message);}
 };
 el("btnLocal").onclick=()=>el("filePicker").click();
@@ -481,10 +563,11 @@ function toast(m){const t=el("toast");t.textContent=m;t.classList.add("show");cl
   const saved=localStorage.getItem(CFG_KEY);
   if(saved){
     try{
-      cfg=JSON.parse(saved);mode="github";setSync("busy","chargement…");
-      const g=await ghGet();rows=rowsFromCSV(g.text);sha=g.sha;setSync("ok","synchronisé");enterHome();
-    }catch(e){setSync("err","reconnexion requise");fillSetup();show("scSetup");toast("Reconnecte-toi : "+e.message);}
-  }else{show("scSetup");}
+      const s=JSON.parse(saved);
+      cfg={owner:s.owner,repo:s.repo,token:s.token,template:s.template||s.path||"oxford-deck.csv"};
+      mode="github";showProfiles();
+    }catch(e){show("scSetup");}
+  }else{fillSetup();show("scSetup");}
 })();
 </script>
 </body>
