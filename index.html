@@ -336,12 +336,10 @@ async function ghMsg(r){try{const j=await r.json();return j.message||r.statusTex
 
 /* ---------- sync ---------- */
 function setSync(state,txt){const s=el("sync");s.className="sync "+(state||"");el("syncTxt").textContent=txt;}
-function markDirty(){dirty=true;setSync("dirty","modifs locales");scheduleSave();}
-function scheduleSave(){if(mode!=="github")return;clearTimeout(saveTimer);saveTimer=setTimeout(()=>save().catch(()=>{}),3500);}
+function markDirty(){dirty=true;setSync("dirty","non sauvegardé");}
 
 async function save(){
   if(mode!=="github"||!dirty) return;
-  clearTimeout(saveTimer);
   setSync("busy","sauvegarde…");
   try{
     sha=await ghPut(toCSV(rows),"Mise à jour révisions",sha);
@@ -407,8 +405,13 @@ function refreshHomeStats(){
 /* ---------- session ---------- */
 function startSession(){
   const pool=selection().slice();
-  // least recently seen first: empty date sorts first, else lexicographic ISO
-  pool.sort((a,b)=>{const x=a.last_seen_date||"",y=b.last_seen_date||"";return x<y?-1:x>y?1:0;});
+  // moins vues d'abord, au jour près ; ordre aléatoire à date égale ou vide (re-mélangé chaque session)
+  pool.forEach(r=>r._rk=Math.random());
+  pool.sort((a,b)=>{
+    const x=(a.last_seen_date||"").slice(0,10), y=(b.last_seen_date||"").slice(0,10);
+    if(x<y)return -1; if(x>y)return 1;
+    return a._rk-b._rk;
+  });
   const queue=pool.slice(0,homeFilters.size);
   if(!queue.length){toast("Aucune carte dans cette sélection.");return;}
   session={queue,i:0,revealed:false,counts:{red:0,yellow:0,green:0,none:0}};
@@ -441,6 +444,7 @@ function advance(flag){
   changeLog.set(keyOf(r),{flag:r.flag,last_seen_date:r.last_seen_date});
   session.counts[r.flag||"none"]++;
   markDirty();
+  if(mode==="github" && changeLog.size>=25) save().catch(()=>{});
   session.i++;
   if(session.i>=session.queue.length){finishSession();return;}
   renderCard();
@@ -473,6 +477,7 @@ document.addEventListener("keydown",e=>{
   else if(session.revealed&&e.key==="3")advance("green");
 });
 document.addEventListener("visibilitychange",()=>{if(document.hidden)save().catch(()=>{});});
+window.addEventListener("pagehide",()=>{save().catch(()=>{});});
 window.addEventListener("beforeunload",e=>{if(dirty&&mode==="github"){e.preventDefault();e.returnValue="";}});
 
 /* ---------- profiles ---------- */
