@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#EDEAE2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Oxford 5000">
+<title>Oxford 5000 · FR→EN</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2320242B'/%3E%3Ctext x='16' y='22' font-size='17' font-family='monospace' fill='%23EDEAE2' text-anchor='middle'%3Efr%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href='data:application/manifest+json,{"name":"Oxford 5000 FR-EN","short_name":"Oxford 5000","display":"standalone","background_color":"%23EDEAE2","theme_color":"%23EDEAE2","icons":[{"src":"data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27%3E%3Crect width=%27192%27 height=%27192%27 rx=%2742%27 fill=%27%2320242B%27/%3E%3Ctext x=%2796%27 y=%27130%27 font-size=%27100%27 font-family=%27monospace%27 fill=%27%23EDEAE2%27 text-anchor=%27middle%27%3Efr%3C/text%3E%3C/svg%3E","sizes":"192x192","type":"image/svg+xml"}]}'>
+<style>
+  :root{
+    --canvas:#EDEAE2;      /* warm paper */
+    --card:#FBFAF6;        /* near-white slip */
+    --ink:#20242B;         /* slate near-black */
+    --muted:#737A82;       /* label gray */
+    --line:#DCD8CE;        /* hairline */
+    --line2:#E9E5DC;
+    --accent:#1F6F6B;      /* restrained teal */
+    --red:#C0392B; --redbg:#F7E5E2;
+    --amber:#C98A1B; --amberbg:#F7EED9;
+    --green:#2E7D4F; --greenbg:#E1EFE5;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    --r:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--canvas);color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    display:flex;justify-content:center;
+  }
+  .app{width:100%;max-width:540px;min-height:100%;display:flex;flex-direction:column;
+    padding:max(14px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom));}
+  .mono{font-family:var(--mono);font-feature-settings:"tnum"}
+  .hidden{display:none!important}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,select{font-family:inherit;font-size:16px}
+
+  /* top bar */
+  .topbar{display:flex;align-items:center;gap:12px;height:34px;flex:0 0 auto}
+  .brand{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .brand b{color:var(--ink);font-weight:600}
+  .top-spacer{flex:1}
+  .sync{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;display:flex;align-items:center;gap:6px;color:var(--muted)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex:0 0 auto}
+  .sync.ok .dot{background:var(--green)} .sync.busy .dot{background:var(--amber);animation:pulse 1s infinite}
+  .sync.dirty .dot{background:var(--amber)} .sync.err .dot{background:var(--red)}
+  @keyframes pulse{50%{opacity:.3}}
+  .icon-btn{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--muted)}
+  .icon-btn:hover{background:#0000000a;color:var(--ink)}
+
+  .progress{height:3px;background:var(--line2);border-radius:2px;margin:12px 0 0;overflow:hidden;flex:0 0 auto}
+  .progress i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s ease}
+
+  .screen{flex:1;display:flex;flex-direction:column;min-height:0}
+  .center{justify-content:center}
+
+  h1.title{font-size:21px;font-weight:650;letter-spacing:-.01em;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 20px}
+
+  /* home stats */
+  .stat-row{display:flex;gap:10px;margin-bottom:22px}
+  .stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 14px 12px}
+  .stat .n{font-family:var(--mono);font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1}
+  .stat .l{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:7px}
+  .flagline{display:flex;gap:7px;margin-bottom:24px}
+  .pill{flex:1;border-radius:10px;padding:9px 4px;text-align:center;border:1px solid transparent}
+  .pill .n{font-family:var(--mono);font-size:17px;font-weight:600}
+  .pill .l{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;margin-top:2px;opacity:.8}
+  .pill.r{background:var(--redbg);color:var(--red)} .pill.a{background:var(--amberbg);color:var(--amber)}
+  .pill.g{background:var(--greenbg);color:var(--green)} .pill.n{background:#0000000a;color:var(--muted)}
+
+  .field{margin-bottom:16px}
+  .field>label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{font-family:var(--mono);font-size:12.5px;letter-spacing:.03em;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);text-transform:uppercase}
+  .chip[aria-pressed="true"]{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
+
+  .btn{display:block;width:100%;text-align:center;padding:15px;border-radius:var(--r);font-size:15.5px;font-weight:600;letter-spacing:.01em;
+    background:var(--ink);color:var(--canvas);transition:transform .04s ease}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .btn[disabled]{opacity:.4;pointer-events:none}
+  .row-actions{display:flex;gap:10px;margin-top:auto;padding-top:18px}
+
+  /* setup */
+  .input{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--ink);font-size:15px}
+  .input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px #1f6f6b22}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:7px}
+  .hint a{color:var(--accent)}
+  details.help{margin:6px 0 18px;font-size:13px}
+  details.help summary{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);cursor:pointer}
+  details.help ol{margin:10px 0 0;padding-left:18px;color:var(--muted);line-height:1.7}
+  details.help code{font-family:var(--mono);background:#0000000d;padding:1px 5px;border-radius:5px;color:var(--ink);font-size:12px}
+
+  /* study card */
+  .stage{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;padding:8px 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:34px 26px;
+    box-shadow:0 1px 0 #ffffff inset, 0 10px 30px -22px #00000040;min-height:230px;
+    display:flex;flex-direction:column;justify-content:center;position:relative;cursor:pointer}
+  .meta{position:absolute;top:16px;left:18px;right:18px;display:flex;gap:8px;align-items:center}
+  .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+    border:1px solid var(--line);border-radius:7px;padding:3px 8px}
+  .tag.lvl{color:var(--accent);border-color:#1f6f6b40}
+  .flagdot{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--line)}
+  .flagdot.r{background:var(--red);border-color:var(--red)} .flagdot.a{background:var(--amber);border-color:var(--amber)} .flagdot.g{background:var(--green);border-color:var(--green)}
+  .meta .grow{flex:1}
+  .word{font-size:clamp(34px,8.5vw,46px);font-weight:680;letter-spacing:-.02em;line-height:1.08;text-align:center;word-break:break-word}
+  .reveal-hint{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center;margin-top:22px}
+  .answer{margin-top:20px;text-align:center;border-top:1px solid var(--line2);padding-top:18px}
+  .answer .en{font-size:clamp(26px,7vw,34px);font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+  .answer.reveal-anim{animation:rise .22s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .controls{flex:0 0 auto;padding-top:16px}
+  .flags{display:flex;gap:10px}
+  .flagbtn{flex:1;border-radius:var(--r);padding:16px 6px 13px;border:1.5px solid var(--line);background:var(--card);
+    display:flex;flex-direction:column;align-items:center;gap:8px;transition:transform .04s ease,border-color .12s}
+  .flagbtn:active{transform:translateY(1px)}
+  .flagbtn .swatch{width:24px;height:24px;border-radius:50%}
+  .flagbtn .k{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .flagbtn.r{border-color:#c0392b40} .flagbtn.r .swatch{background:var(--red)} .flagbtn.r:hover{border-color:var(--red)}
+  .flagbtn.a{border-color:#c98a1b40} .flagbtn.a .swatch{background:var(--amber)} .flagbtn.a:hover{border-color:var(--amber)}
+  .flagbtn.g{border-color:#2e7d4f40} .flagbtn.g .swatch{background:var(--green)} .flagbtn.g:hover{border-color:var(--green)}
+  .skip{margin-top:10px;display:flex;gap:10px}
+  .linkbtn{flex:1;font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+    padding:11px;border-radius:10px;border:1px solid var(--line2)}
+  .linkbtn:hover{color:var(--ink);background:#00000008}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--canvas);
+    font-size:13px;padding:10px 16px;border-radius:10px;box-shadow:0 8px 24px -10px #00000060;opacity:0;pointer-events:none;transition:opacity .2s}
+  .toast.show{opacity:1}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><b>Oxford&nbsp;5000</b> · fr→en</div>
+    <div class="top-spacer"></div>
+    <div class="sync" id="sync"><span class="dot"></span><span id="syncTxt">—</span></div>
+    <button class="icon-btn" id="btnSettings" title="Réglages" aria-label="Réglages">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/></svg>
+    </button>
+  </div>
+  <div class="progress" id="progressWrap" style="visibility:hidden"><i id="progressBar"></i></div>
+
+  <!-- SETUP -->
+  <section class="screen center" id="scSetup">
+    <h1 class="title">Connecter ton dépôt</h1>
+    <p class="sub">L'appli lit et écrit ton fichier <span class="mono">.csv</span> dans un dépôt GitHub privé. Le jeton reste dans ce navigateur — il n'est jamais envoyé ailleurs ni inscrit dans le code.</p>
+    <div class="field"><label>Propriétaire (ton pseudo GitHub)</label><input class="input" id="inOwner" placeholder="ex. marie-dupont" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+    <div class="field"><label>Dépôt</label><input class="input" id="inRepo" placeholder="ex. oxford-deck" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+    <div class="field"><label>Chemin du fichier</label><input class="input" id="inPath" value="oxford-deck.csv" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+    <div class="field"><label>Jeton d'accès (fine-grained)</label><input class="input" id="inToken" type="password" placeholder="github_pat_…" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <div class="hint">Permissions requises : <b>Contents</b> en lecture & écriture, sur ce seul dépôt.</div>
+    </div>
+    <details class="help">
+      <summary>Comment créer le jeton (1 fois)</summary>
+      <ol>
+        <li>Crée un dépôt <b>privé</b> et dépose-y le fichier <code>oxford-deck.csv</code>.</li>
+        <li>GitHub → <b>Settings</b> → <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <code>Generate new token</code>.</li>
+        <li>Resource owner = toi · Repository access = <b>Only select repositories</b> → ton dépôt.</li>
+        <li>Permissions → Repository → <b>Contents</b> → <b>Read and write</b>.</li>
+        <li>Génère, copie le jeton, colle-le ci-dessus.</li>
+      </ol>
+    </details>
+    <button class="btn" id="btnConnect">Se connecter</button>
+    <div class="row-actions"><button class="btn ghost" id="btnLocal">Tester sans GitHub (fichier local)</button></div>
+  </section>
+
+  <!-- HOME -->
+  <section class="screen center hidden" id="scHome">
+    <h1 class="title" id="homeTitle">Prêt à réviser</h1>
+    <p class="sub" id="homeSub"></p>
+    <div class="stat-row">
+      <div class="stat"><div class="n mono" id="stTotal">—</div><div class="l">mots</div></div>
+      <div class="stat"><div class="n mono" id="stNew">—</div><div class="l">jamais vus</div></div>
+      <div class="stat"><div class="n mono" id="stDue">—</div><div class="l">sélection</div></div>
+    </div>
+    <div class="flagline">
+      <div class="pill r"><div class="n" id="cR">0</div><div class="l">rouge</div></div>
+      <div class="pill a"><div class="n" id="cA">0</div><div class="l">jaune</div></div>
+      <div class="pill g"><div class="n" id="cG">0</div><div class="l">vert</div></div>
+      <div class="pill n"><div class="n" id="cN">0</div><div class="l">sans</div></div>
+    </div>
+    <div class="field"><label>Niveaux</label><div class="chips" id="lvlChips"></div></div>
+    <div class="field"><label>Filtrer par flag</label><div class="chips" id="flagChips"></div></div>
+    <div class="field"><label>Longueur de session</label><div class="chips" id="sizeChips"></div></div>
+    <button class="btn" id="btnStart">Commencer la session</button>
+  </section>
+
+  <!-- STUDY -->
+  <section class="screen hidden" id="scStudy">
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="meta">
+          <span class="tag lvl" id="cardLvl">a1</span>
+          <span class="grow"></span>
+          <span class="flagdot" id="cardFlag"></span>
+        </div>
+        <div class="word" id="cardFr">—</div>
+        <div class="answer hidden" id="cardAnswer"><div class="en" id="cardEn">—</div><div class="tag" id="cardPos" style="display:inline-block;margin-top:10px"></div></div>
+        <div class="reveal-hint" id="revealHint">toucher pour révéler</div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="flags" id="flagsRow">
+        <button class="flagbtn r" data-flag="red"><span class="swatch"></span><span class="k">rouge · 1</span></button>
+        <button class="flagbtn a" data-flag="yellow"><span class="swatch"></span><span class="k">jaune · 2</span></button>
+        <button class="flagbtn g" data-flag="green"><span class="swatch"></span><span class="k">vert · 3</span></button>
+      </div>
+      <div class="skip">
+        <button class="linkbtn" id="btnKeep">Suivant ↵</button>
+        <button class="linkbtn" id="btnQuit">Terminer</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- DONE -->
+  <section class="screen center hidden" id="scDone">
+    <h1 class="title">Session terminée</h1>
+    <p class="sub" id="doneSub"></p>
+    <div class="flagline">
+      <div class="pill r"><div class="n" id="dR">0</div><div class="l">rouge</div></div>
+      <div class="pill a"><div class="n" id="dA">0</div><div class="l">jaune</div></div>
+      <div class="pill g"><div class="n" id="dG">0</div><div class="l">vert</div></div>
+      <div class="pill n"><div class="n" id="dN">0</div><div class="l">vus</div></div>
+    </div>
+    <button class="btn" id="btnAgain">Nouvelle session</button>
+    <div class="row-actions"><button class="btn ghost" id="btnSyncNow">Synchroniser maintenant</button></div>
+  </section>
+</div>
+
+<input type="file" id="filePicker" accept=".csv,text/csv" class="hidden">
+<a id="dl" class="hidden"></a>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const HEADERS=["word","level","pos","word_fr","flag","last_seen_date"];
+const LEVELS=["a1","a2","b1","b2","c1"];
+const CFG_KEY="oxdeck_cfg_v1";
+const $=s=>document.querySelector(s);
+const el=id=>document.getElementById(id);
+
+let cfg=null, rows=[], sha=null, mode="github"; // or "local"
+let dirty=false, saveTimer=null;
+const changeLog=new Map();           // key -> {flag,last_seen_date}
+const keyOf=r=>r.word+"\u0001"+r.pos;
+
+let session=null; // {queue, i, revealed, counts}
+
+/* ---------- CSV ---------- */
+function parseCSV(text){
+  text=text.replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+  const out=[]; let row=[], f="", q=false, i=0;
+  while(i<text.length){
+    const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i+=2;continue;} q=false;i++;continue;} f+=c;i++;continue; }
+    if(c==='"'){q=true;i++;continue;}
+    if(c===','){row.push(f);f="";i++;continue;}
+    if(c==='\n'){row.push(f);out.push(row);row=[];f="";i++;continue;}
+    f+=c;i++;
+  }
+  if(f.length||row.length){row.push(f);out.push(row);}
+  return out;
+}
+function rowsFromCSV(text){
+  const grid=parseCSV(text).filter(r=>r.length>1||(r.length===1&&r[0].trim()!==""));
+  if(!grid.length) return [];
+  const head=grid[0].map(h=>h.trim());
+  const idx={}; HEADERS.forEach(h=>idx[h]=head.indexOf(h));
+  return grid.slice(1).map(r=>{
+    const o={};
+    HEADERS.forEach(h=>{o[h]= idx[h]>=0 ? (r[idx[h]]??"") : "";});
+    return o;
+  }).filter(o=>o.word!=="");
+}
+function csvField(v){v=v==null?"":String(v); return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+function toCSV(objs){return [HEADERS.join(",")].concat(objs.map(o=>HEADERS.map(h=>csvField(o[h])).join(","))).join("\n")+"\n";}
+
+/* ---------- base64 utf8 ---------- */
+function utf8ToB64(str){const b=new TextEncoder().encode(str);let s="";const C=0x8000;for(let i=0;i<b.length;i+=C)s+=String.fromCharCode.apply(null,b.subarray(i,i+C));return btoa(s);}
+function b64ToUtf8(b64){b64=b64.replace(/\s/g,"");const bin=atob(b64);const b=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return new TextDecoder().decode(b);}
+
+/* ---------- GitHub ---------- */
+function apiURL(){return `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.path.split("/").map(encodeURIComponent).join("/")}`;}
+function ghHeaders(){return {Authorization:`Bearer ${cfg.token}`,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};}
+async function ghGet(){
+  const r=await fetch(apiURL()+"?ref=HEAD&t="+Date.now(),{headers:ghHeaders(),cache:"no-store"});
+  if(!r.ok){const e=new Error(await ghMsg(r));e.status=r.status;throw e;}
+  const j=await r.json();
+  return {text:b64ToUtf8(j.content),sha:j.sha};
+}
+async function ghPut(text,message,curSha){
+  const r=await fetch(apiURL(),{method:"PUT",headers:{...ghHeaders(),"Content-Type":"application/json"},
+    body:JSON.stringify({message,content:utf8ToB64(text),sha:curSha})});
+  if(!r.ok){const e=new Error(await ghMsg(r));e.status=r.status;throw e;}
+  const j=await r.json();return j.content.sha;
+}
+async function ghMsg(r){try{const j=await r.json();return j.message||r.statusText;}catch(_){return r.statusText;}}
+
+/* ---------- sync ---------- */
+function setSync(state,txt){const s=el("sync");s.className="sync "+(state||"");el("syncTxt").textContent=txt;}
+function markDirty(){dirty=true;setSync("dirty","modifs locales");scheduleSave();}
+function scheduleSave(){if(mode!=="github")return;clearTimeout(saveTimer);saveTimer=setTimeout(()=>save().catch(()=>{}),3500);}
+
+async function save(){
+  if(mode!=="github"||!dirty) return;
+  clearTimeout(saveTimer);
+  setSync("busy","sauvegarde…");
+  try{
+    sha=await ghPut(toCSV(rows),"Mise à jour révisions",sha);
+    dirty=false;changeLog.clear();setSync("ok","synchronisé");
+  }catch(e){
+    if(e.status===409||e.status===422){            // someone/somewhere changed the file
+      try{
+        const fresh=await ghGet();
+        const fr=rowsFromCSV(fresh.text);
+        const byKey=new Map(fr.map(r=>[keyOf(r),r]));
+        for(const [k,chg] of changeLog){const t=byKey.get(k);if(t){t.flag=chg.flag;t.last_seen_date=chg.last_seen_date;}}
+        rows=fr;sha=fresh.sha;
+        sha=await ghPut(toCSV(rows),"Mise à jour révisions (fusion)",sha);
+        dirty=false;changeLog.clear();setSync("ok","synchronisé");refreshHomeStats();
+      }catch(e2){setSync("err","échec sync");toast("Sync impossible : "+e2.message);}
+    }else{setSync("err","échec sync");toast("Sync impossible : "+e.message);}
+  }
+}
+
+/* ---------- screens ---------- */
+function show(id){["scSetup","scHome","scStudy","scDone"].forEach(s=>el(s).classList.toggle("hidden",s!==id));
+  el("progressWrap").style.visibility = id==="scStudy" ? "visible":"hidden";}
+
+/* ---------- home ---------- */
+const homeFilters={levels:new Set(LEVELS),flag:"all",size:30};
+function buildHomeControls(){
+  const lc=el("lvlChips");lc.innerHTML="";
+  LEVELS.forEach(lv=>{
+    const b=document.createElement("button");b.className="chip";b.textContent=lv;b.setAttribute("aria-pressed","true");
+    b.onclick=()=>{const on=b.getAttribute("aria-pressed")==="true";if(on&&homeFilters.levels.size===1)return;
+      b.setAttribute("aria-pressed",String(!on));on?homeFilters.levels.delete(lv):homeFilters.levels.add(lv);refreshHomeStats();};
+    lc.appendChild(b);
+  });
+  const fc=el("flagChips");fc.innerHTML="";
+  [["all","tous"],["red","rouge"],["yellow","jaune"],["green","vert"],["none","sans flag"]].forEach(([v,lab])=>{
+    const b=document.createElement("button");b.className="chip";b.textContent=lab;b.setAttribute("aria-pressed",String(v==="all"));
+    b.onclick=()=>{fc.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");homeFilters.flag=v;refreshHomeStats();};
+    fc.appendChild(b);
+  });
+  const sc=el("sizeChips");sc.innerHTML="";
+  [["20","20"],["30","30"],["50","50"],["999999","tout"]].forEach(([v,lab])=>{
+    const b=document.createElement("button");b.className="chip";b.textContent=lab;b.setAttribute("aria-pressed",String(+v===homeFilters.size));
+    b.onclick=()=>{sc.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");homeFilters.size=+v;refreshHomeStats();};
+    sc.appendChild(b);
+  });
+}
+function selection(){
+  return rows.filter(r=>homeFilters.levels.has((r.level||"").toLowerCase()) &&
+    (homeFilters.flag==="all" || (homeFilters.flag==="none" ? !r.flag : r.flag===homeFilters.flag)));
+}
+function refreshHomeStats(){
+  const total=rows.length;
+  const c={red:0,yellow:0,green:0,none:0};
+  let neverSeen=0;
+  rows.forEach(r=>{c[r.flag||"none"]=(c[r.flag||"none"]||0)+1;if(!r.last_seen_date)neverSeen++;});
+  el("stTotal").textContent=total;el("stNew").textContent=neverSeen;el("stDue").textContent=selection().length;
+  el("cR").textContent=c.red;el("cA").textContent=c.yellow;el("cG").textContent=c.green;el("cN").textContent=c.none;
+  el("homeSub").textContent = mode==="github" ? "Sync GitHub active. Choisis ton paquet, puis lance la session." :
+    "Mode fichier local (pas de sync). Tes changements restent en mémoire — exporte le CSV pour les garder.";
+}
+
+/* ---------- session ---------- */
+function startSession(){
+  const pool=selection().slice();
+  // least recently seen first: empty date sorts first, else lexicographic ISO
+  pool.sort((a,b)=>{const x=a.last_seen_date||"",y=b.last_seen_date||"";return x<y?-1:x>y?1:0;});
+  const queue=pool.slice(0,homeFilters.size);
+  if(!queue.length){toast("Aucune carte dans cette sélection.");return;}
+  session={queue,i:0,revealed:false,counts:{red:0,yellow:0,green:0,none:0}};
+  show("scStudy");renderCard();
+}
+function renderCard(){
+  const r=session.queue[session.i];
+  el("progressBar").style.width=((session.i)/session.queue.length*100)+"%";
+  el("cardLvl").textContent=(r.level||"").toUpperCase();
+  el("cardFr").textContent=r.word_fr||"—";
+  el("cardEn").textContent=r.word;
+  el("cardPos").textContent=r.pos;
+  const fd=el("cardFlag");fd.className="flagdot"+(r.flag?(" "+r.flag[0]):"");
+  el("cardAnswer").classList.add("hidden");
+  el("revealHint").classList.remove("hidden");
+  el("flagsRow").style.opacity=".45";el("flagsRow").style.pointerEvents="none";
+  session.revealed=false;
+}
+function reveal(){
+  if(session.revealed)return;
+  session.revealed=true;
+  const a=el("cardAnswer");a.classList.remove("hidden");a.classList.remove("reveal-anim");void a.offsetWidth;a.classList.add("reveal-anim");
+  el("revealHint").classList.add("hidden");
+  el("flagsRow").style.opacity="1";el("flagsRow").style.pointerEvents="auto";
+}
+function advance(flag){
+  const r=session.queue[session.i];
+  if(flag){r.flag=flag;}
+  r.last_seen_date=new Date().toISOString();
+  changeLog.set(keyOf(r),{flag:r.flag,last_seen_date:r.last_seen_date});
+  session.counts[r.flag||"none"]++;
+  markDirty();
+  session.i++;
+  if(session.i>=session.queue.length){finishSession();return;}
+  renderCard();
+}
+function finishSession(){
+  el("progressBar").style.width="100%";
+  const c=session.counts;
+  el("dR").textContent=c.red;el("dA").textContent=c.yellow;el("dG").textContent=c.green;
+  el("dN").textContent=session.queue.length;
+  el("doneSub").textContent=`${session.queue.length} cartes revues.` + (mode==="github"?" Sauvegarde en cours…":" Pense à exporter le CSV.");
+  show("scDone");refreshHomeStats();
+  save().catch(()=>{});
+}
+
+/* ---------- events ---------- */
+el("card").addEventListener("click",reveal);
+document.querySelectorAll(".flagbtn").forEach(b=>b.addEventListener("click",()=>{if(session&&session.revealed)advance(b.dataset.flag);}));
+el("btnKeep").onclick=()=>{if(!session)return;if(!session.revealed){reveal();return;}advance(null);};
+el("btnQuit").onclick=()=>{if(session){const c=session.counts;el("dR").textContent=c.red;el("dA").textContent=c.yellow;el("dG").textContent=c.green;el("dN").textContent=session.i;el("doneSub").textContent=`${session.i} cartes revues.`;}show("scDone");refreshHomeStats();save().catch(()=>{});};
+el("btnStart").onclick=startSession;
+el("btnAgain").onclick=()=>{buildHomeControls();refreshHomeStats();show("scHome");};
+el("btnSyncNow").onclick=()=>{if(mode==="github"){dirty=true;save();}else{exportLocal();}};
+el("btnSettings").onclick=()=>{fillSetup();show("scSetup");};
+
+document.addEventListener("keydown",e=>{
+  if(el("scStudy").classList.contains("hidden"))return;
+  if(e.key===" "||e.key==="Enter"){e.preventDefault();if(!session.revealed)reveal();else if(e.key==="Enter")advance(null);}
+  else if(session.revealed&&e.key==="1")advance("red");
+  else if(session.revealed&&e.key==="2")advance("yellow");
+  else if(session.revealed&&e.key==="3")advance("green");
+});
+document.addEventListener("visibilitychange",()=>{if(document.hidden)save().catch(()=>{});});
+window.addEventListener("beforeunload",e=>{if(dirty&&mode==="github"){e.preventDefault();e.returnValue="";}});
+
+/* ---------- setup / connect ---------- */
+function fillSetup(){if(cfg){el("inOwner").value=cfg.owner||"";el("inRepo").value=cfg.repo||"";el("inPath").value=cfg.path||"oxford-deck.csv";el("inToken").value=cfg.token||"";}}
+el("btnConnect").onclick=async()=>{
+  const owner=el("inOwner").value.trim(),repo=el("inRepo").value.trim(),path=el("inPath").value.trim(),token=el("inToken").value.trim();
+  if(!owner||!repo||!path||!token){toast("Remplis tous les champs.");return;}
+  cfg={owner,repo,path,token};mode="github";
+  setSync("busy","connexion…");
+  try{
+    const g=await ghGet();rows=rowsFromCSV(g.text);sha=g.sha;
+    if(!rows.length)throw new Error("Fichier vide ou colonnes manquantes.");
+    localStorage.setItem(CFG_KEY,JSON.stringify(cfg));
+    setSync("ok","synchronisé");enterHome();
+  }catch(e){setSync("err","échec");toast("Connexion impossible : "+e.message);}
+};
+el("btnLocal").onclick=()=>el("filePicker").click();
+el("filePicker").addEventListener("change",ev=>{
+  const f=ev.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{rows=rowsFromCSV(rd.result);mode="local";cfg=null;sha=null;
+    if(!rows.length){toast("CSV illisible.");return;}setSync("","local · non synchronisé");enterHome();};
+  rd.readAsText(f);
+});
+function exportLocal(){
+  const blob=new Blob([toCSV(rows)],{type:"text/csv"});const url=URL.createObjectURL(blob);
+  const a=el("dl");a.href=url;a.download=(cfg&&cfg.path?cfg.path.split("/").pop():"oxford-deck.csv");a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);toast("CSV exporté.");
+}
+function enterHome(){buildHomeControls();refreshHomeStats();show("scHome");}
+
+/* ---------- toast ---------- */
+let toastT=null;
+function toast(m){const t=el("toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600);}
+
+/* ---------- boot ---------- */
+(async function(){
+  const saved=localStorage.getItem(CFG_KEY);
+  if(saved){
+    try{
+      cfg=JSON.parse(saved);mode="github";setSync("busy","chargement…");
+      const g=await ghGet();rows=rowsFromCSV(g.text);sha=g.sha;setSync("ok","synchronisé");enterHome();
+    }catch(e){setSync("err","reconnexion requise");fillSetup();show("scSetup");toast("Reconnecte-toi : "+e.message);}
+  }else{show("scSetup");}
+})();
+</script>
+</body>
+</html>
